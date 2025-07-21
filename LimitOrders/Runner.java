@@ -1,8 +1,3 @@
-/**
- * Created by author.
- */
-
-
 public class Runner {
 
     private double deltaUp;
@@ -161,6 +156,11 @@ public class Runner {
         } else {
             return 2;
         }
+    }
+
+
+    public double getExtreme(){
+        return extreme;
     }
 
 

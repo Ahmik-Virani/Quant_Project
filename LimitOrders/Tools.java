@@ -1,8 +1,8 @@
+import java.io.File;
+import java.io.IOException;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
 
-/**
- * Created by author.
- * The class Tools holds a set of auxiliary functions which can be used in order to simplify work on the general ideas.
- */
 public class Tools {
 
 
@@ -34,5 +34,30 @@ public class Tools {
         return n;
     }
 
+    public static void CreateFile(String filename) {
+        try {
+            File file = new File(filename);
+            if(file.createNewFile()){
+                System.out.println("File created: " + file.getName());
+            } else{
+                // If file exists, clear its contents
+                FileWriter writer = new FileWriter(file, false); // false = overwrite mode
+                writer.write(""); // write nothing = clear contents
+                writer.close();
+                System.out.println("File already existed. Contents cleared.");
+            }
+        } catch (IOException e) {
+            System.out.println("An error occurred: " + e);
+        }
+    }
+
+    public static void appendToFile(String filename, String content) {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(filename, true))) {
+            writer.write(content);
+            writer.newLine(); 
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
 }
