@@ -60,4 +60,22 @@ public class Tools {
         }
     }
 
+    public static void logTrade(String filename, double entryPrice, double exitPrice, String tradeType) {
+        double pnl;
+        if (tradeType.equalsIgnoreCase("LONG")) {
+            pnl = exitPrice - entryPrice;
+        } else if (tradeType.equalsIgnoreCase("SHORT")) {
+            pnl = entryPrice - exitPrice;
+        } else {
+            System.out.println("Invalid trade type.");
+            return;
+        }
+
+        try (FileWriter writer = new FileWriter(filename, true)) {
+            writer.write(entryPrice + "," + exitPrice + "," + tradeType + "," + pnl + "\n");
+        } catch (IOException e) {
+            System.out.println("Error writing trade to file: " + e.getMessage());
+        }
+    }
+
 }
