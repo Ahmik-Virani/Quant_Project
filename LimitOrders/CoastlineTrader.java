@@ -156,8 +156,7 @@ public class CoastlineTrader {
             if (disbalancedOrders.size() == 0){ // if there is no disbalanced orders then we just open a new position.
                 sellLimitOrder = null;
                 buyLimitOrder = new LimitOrder(1, price.clone(), expectedLowerIE, cascadeVol, lowerIEtype, dStarDown);
-                // computeTargetRelatPnL(buyLimitOrder);
-                computeTargetRelatPnL(runners[properIndex].getExtreme());
+                computeTargetRelatPnL();
             } else {
                 buyLimitOrder = new LimitOrder(1, price.clone(), expectedLowerIE, cascadeVol, buyDcOROS, buyDelta);
                 LinkedList<LimitOrder> compensatedOrdersList = findCompensatedOrdersList(expectedUpperIE, originalDelta, -1);
@@ -175,8 +174,7 @@ public class CoastlineTrader {
                 // we just open a new position.
                 buyLimitOrder = null;
                 sellLimitOrder = new LimitOrder(-1, price.clone(), expectedUpperIE, cascadeVol, upperIEtype, deltaUp);
-                // computeTargetRelatPnL(sellLimitOrder);
-                computeTargetRelatPnL(runners[properIndex].getExtreme());
+                computeTargetRelatPnL();
             } else {
                 LinkedList<LimitOrder> compensatedOrdersList = findCompensatedOrdersList(expectedLowerIE, originalDelta, 1);
                 if (compensatedOrdersList.size() != 0){
@@ -215,7 +213,7 @@ public class CoastlineTrader {
         inventory += buyLimitOrder.getVolume();
         correctThresholdsAndVolumes(inventory);
         
-        Tools.appendToFile(logFileName, "[TRADE EXECUTED] BUY " + buyLimitOrder.getVolume() + " @ " + buyLimitOrder.getLevel());
+        // Tools.appendToFile(logFileName, "[TRADE EXECUTED] BUY " + buyLimitOrder.getVolume() + " @ " + buyLimitOrder.getLevel());
         
         if (longShort == 1){
             disbalancedOrders.add(buyLimitOrder.clone());
@@ -239,7 +237,7 @@ public class CoastlineTrader {
         inventory -= sellLimitOrder.getVolume();
         correctThresholdsAndVolumes(inventory);
         
-        Tools.appendToFile(logFileName, "[TRADE EXECUTED] SELL " + sellLimitOrder.getVolume() + " @ " + sellLimitOrder.getLevel());
+        // Tools.appendToFile(logFileName, "[TRADE EXECUTED] SELL " + sellLimitOrder.getVolume() + " @ " + sellLimitOrder.getLevel());
         
         if (longShort == -1) {
             disbalancedOrders.add(sellLimitOrder.clone());
@@ -423,6 +421,19 @@ public class CoastlineTrader {
      * The method should be called as soon as the current PnL is bigger or equal then the targetPnL.
      */
     private void closePosition(Price price){
+
+        // So basically what is happening is:
+        // Once the target pnl is reached
+        // All the open trades are closed at the same price
+        double exitPrice = (longShort == 1 ? price.getBid() : price.getAsk());
+
+        for (LimitOrder entryOrder : disbalancedOrders) {
+            double entryPrice = entryOrder.getLevel();
+            String tradeType = (longShort == 1) ? "LONG" : "SHORT";
+
+            Tools.logTrade(logFileName, entryPrice, exitPrice, tradeType);
+        }
+
         marketOrderToClosePosition(price);
         realizedProfit += positionRealizedProfit;
         positionRealizedProfit = 0.0;
@@ -441,10 +452,10 @@ public class CoastlineTrader {
     private boolean marketOrderToClosePosition(Price price){
         double marketPrice = (longShort == 1 ? price.getBid() : price.getAsk());
 
-        if(longShort == 1)
-            Tools.appendToFile(logFileName, "[LONG POSITION CLOSED] Market Order @ " + marketPrice);
-        else
-            Tools.appendToFile(logFileName, "[SHORT POSITION CLOSED] Market Order @ " + marketPrice);
+        // if(longShort == 1)
+        //     Tools.appendToFile(logFileName, "[LONG POSITION CLOSED] Market Order @ " + marketPrice);
+        // else
+        //     Tools.appendToFile(logFileName, "[SHORT POSITION CLOSED] Market Order @ " + marketPrice);
 
         for (LimitOrder aDisbalencedOrder : disbalancedOrders){
             double absPriceMove = (marketPrice - aDisbalencedOrder.getLevel()) * aDisbalencedOrder.getType();
@@ -456,9 +467,22 @@ public class CoastlineTrader {
 
 
     // Strategy A
-    private void computeTargetRelatPnL(double extreme){
-        takeProfit = extreme * (1 + originalDelta) * (1 + originalDelta/2);
-        stopLoss = extreme * (1 + originalDelta) * (1 - originalDelta/2);
+    private void computeTargetRelatPnL(){
+        // takeProfit = extreme * (1 + originalDelta) * (1 + originalDelta/2);
+        // stopLoss = extreme * (1 + originalDelta) * (1 - originalDelta/2);
+
+        int properRunnerIndex = findProperRunnerIndex();
+        double P_DCC = runners[properRunnerIndex].getExpectedDcLevel();
+        double delta;
+
+        if(longShort == 1){
+            delta = runners[properRunnerIndex].getDeltaUp();
+        }else{
+            delta = runners[properRunnerIndex].getDeltaDown();
+        }
+
+        takeProfit = P_DCC * (1 + delta / 2.0);
+        stopLoss = P_DCC * (1 - delta / 2.0);
     }
 
 

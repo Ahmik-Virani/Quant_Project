@@ -9,6 +9,7 @@ public class Runner {
     private double extreme;
     private double reference;
     private double expectedDcLevel, expectedOsLevel;
+    private double currentPrice;
 
 
     public Runner(double deltaUp, double deltaDown, double dStarUp, double dStarDown){
@@ -26,7 +27,7 @@ public class Runner {
             initialized = true;
             extreme = reference = price.getMid();
             findExpectedDClevel();
-            findExpectedOSlevel();
+            findExpectedOSlevel(price);
             return 0;
         }
 
@@ -35,7 +36,7 @@ public class Runner {
                 mode = 1;
                 extreme = reference = price.getBid();
                 findExpectedDClevel();
-                findExpectedOSlevel();
+                findExpectedOSlevel(price);
                 return 1;
             }
             if( price.getAsk() < extreme ){
@@ -43,7 +44,7 @@ public class Runner {
                 findExpectedDClevel();
                 if( price.getAsk() < expectedOsLevel ){
                     reference = extreme;
-                    findExpectedOSlevel();
+                    findExpectedOSlevel(price);
                     return -2;
                 }
             }
@@ -52,7 +53,7 @@ public class Runner {
                 mode = -1;
                 extreme = reference = price.getAsk();
                 findExpectedDClevel();
-                findExpectedOSlevel();
+                findExpectedOSlevel(price);
                 return -1;
             }
             if( price.getBid() > extreme ){
@@ -60,7 +61,7 @@ public class Runner {
                 findExpectedDClevel();
                 if( price.getBid() > expectedOsLevel ){
                     reference = extreme;
-                    findExpectedOSlevel();
+                    findExpectedOSlevel(price);
                     return 2;
                 }
             }
@@ -72,19 +73,34 @@ public class Runner {
 
     private void findExpectedDClevel(){
         if (mode == -1){
-            expectedDcLevel = Math.exp(Math.log(extreme) + deltaUp);
+            // expectedDcLevel = Math.exp(Math.log(extreme) + deltaUp);
+            expectedDcLevel = extreme * (1 + deltaUp);
         } else {
-            expectedDcLevel = Math.exp(Math.log(extreme) - deltaDown);
+            // expectedDcLevel = Math.exp(Math.log(extreme) - deltaDown);
+            expectedDcLevel = extreme * (1 - deltaDown);
         }
     }
     
     
-    private void findExpectedOSlevel(){
+    private void findExpectedOSlevel(Price price){
+
+        currentPrice = getCurrentPrice(price);
+
+        double commonPart = (currentPrice - expectedDcLevel) / expectedDcLevel ;
+
         if (mode == -1){
-            expectedOsLevel = Math.exp(Math.log(reference) - dStarDown);
+            // expectedOsLevel = Math.exp(Math.log(reference) - dStarDown);
+
+            expectedOsLevel = commonPart / deltaDown;
+
         } else {
-            expectedOsLevel = Math.exp(Math.log(reference) + dStarUp);
+            // expectedOsLevel = Math.exp(Math.log(reference) + dStarUp);
+
+            expectedOsLevel = commonPart / deltaUp;
         }
+
+
+
     }
 
 
@@ -156,6 +172,11 @@ public class Runner {
         } else {
             return 2;
         }
+    }
+
+    public double getCurrentPrice(Price price){
+        double marketPrice = (getMode() == 1 ? price.getBid() : price.getAsk());
+        return marketPrice;
     }
 
 
