@@ -28,3 +28,19 @@ systems. This new approach to designing automated trading algorithms is a parsim
 type of investment strategy that not only generates profits, but also provides liquidity to financial markets and 
 does not have a priori restrictions on the amount of assets that are managed.*
 
+
+### Running the code
+
+To run the limit orders file:
+
+1. Go to the LimitOrders Directory
+
+2. Compile the file
+```
+javac *.java
+```
+
+3. Run the AlphaEngine
+```
+java AlphaEnginePublic.Java
+```
