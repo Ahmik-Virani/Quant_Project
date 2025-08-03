@@ -21,9 +21,12 @@ public class CoastlineTrader {
     private double takeProfit = 0.0;
     private double stopLoss = 0.0;
 
+<<<<<<< HEAD
     private int goodTrades = 0;
     private int badTrades = 0;
 
+=======
+>>>>>>> 965c4648b15319945c59d300927d59c95d19afdd
     private String logFileName;    // File which stores the log for this trader
 
     /**
@@ -375,6 +378,7 @@ public class CoastlineTrader {
     private boolean positionCrossedTargetPnL(Price price){
         // return (getPositionTotalPnL(price) >= targetAbsPnL);
 
+<<<<<<< HEAD
         if(getPositionTotalPnL(price) >= takeProfit){
             goodTrades++;
             return true;
@@ -383,6 +387,10 @@ public class CoastlineTrader {
             badTrades++;
             return true;
         }
+=======
+        if(getPositionTotalPnL(price) >= takeProfit) return true;
+        if(getPositionTotalPnL(price) <= stopLoss) return true;
+>>>>>>> 965c4648b15319945c59d300927d59c95d19afdd
         return false;
     }
 
@@ -440,7 +448,11 @@ public class CoastlineTrader {
             double entryPrice = entryOrder.getLevel();
             String tradeType = (longShort == 1) ? "LONG" : "SHORT";
 
+<<<<<<< HEAD
             // Tools.logTrade(logFileName, entryPrice, exitPrice, tradeType);
+=======
+            Tools.logTrade(logFileName, entryPrice, exitPrice, tradeType);
+>>>>>>> 965c4648b15319945c59d300927d59c95d19afdd
         }
 
         marketOrderToClosePosition(price);
