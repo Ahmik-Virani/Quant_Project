@@ -1,3 +1,4 @@
 Data/*.csv
 log_files/*.csv
-LimitOrders/*.classData/*.csv
+LimitOrders/*.class
+*.DS_Store
