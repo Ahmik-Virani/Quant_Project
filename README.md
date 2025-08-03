@@ -1,13 +1,54 @@
-The code presented here relates to the book chapter cited below. There are two implementations of the trading model algorithm:
+# Alpha Engine – Limit Orders
 
-1. *code.java*:
-This class is intended to give an overview of how the trading model algorithm functions. However, the focus lies not on the framework supporting the trading model. As a result, users are required to implement some of their own code in order to get the trading model running.
+This repository is a modified and enhanced version of [AntonVonGolub/Code](https://github.com/AntonVonGolub/Code), tailored for research and experimentation in high-frequency trading using limit order data.
 
-2. *LimitOrders*:
-A folder containing a fully functional version of the Alpha Engine utilizing limit orders.
+The only active and maintained component in this repository is the `LimitOrders` directory, which contains the core logic for the Alpha Engine.
+
+## 🚀 Getting Started
+
+### Step 1: Download Data
+
+Download historical tick-level FX data from [TrueFX Historical Data](https://www.truefx.com/truefx-historical-downloads/).
+
+- Save the `.csv` files inside a directory named `Data` located in the root of the project.
+
+### Step 2: Configure Input File
+
+Open the Java file `AlphaEnginePublic.java` inside the `LimitOrders/` directory.
+
+Modify the filename at **line 15** to point to the desired CSV file you downloaded.
+
+### Step 3: Compile and Run
+Return to the root directory of the project and execute the provided shell script.
+```
+./shell.sh
+```
+
+This script will:
+
+ - Compile all .java files in the LimitOrders directory.
+ - Execute AlphaEnginePublic.java
+
+### Directory Structure
+```
+Alpha-Engine/
+├── Data/                  # Contains input .csv data (ignored in .gitignore)
+├── LimitOrders/           # Contains Java source files for Alpha Engine
+│   ├── AlphaEngine.java
+│   ├── AlphaEnginePublic.java
+│   ├── CoastlineTrader.java
+│   ├── LimitOrder.java
+│   ├── LocalLiquidity.java
+│   ├── Price.java
+│   ├── ReadData.java
+│   ├── Runner.java
+│   └── Price.java
+├── shell.sh               # Script to compile and run the engine
+├── README.md              # You're here!
+```
 
 
-Source:
+### Credits:
 
 **The Alpha Engine: Designing an Automated Trading Algorithm**  
 Golub, Anton and Glattfelder, James B. and Olsen, Richard B.  
@@ -17,7 +58,7 @@ Chapman & Hall/CRC Series in Mathematical Finance
 
 A preprint is available at [SSRN](https://papers.ssrn.com/sol3/papers.cfm?abstract_id=2951348).
 
-### Abstract
+#### Abstract
 
 *We introduce a new approach to algorithmic investment management that yields profitable automated trading strategies. 
 This trading model design is the result of a path of investigation that was chosen nearly three decades ago. Back then, 
@@ -27,20 +68,3 @@ found by embedding the trading model construction in an agent-base framework, in
 systems. This new approach to designing automated trading algorithms is a parsimonious method for building a new 
 type of investment strategy that not only generates profits, but also provides liquidity to financial markets and 
 does not have a priori restrictions on the amount of assets that are managed.*
-
-
-### Running the code
-
-To run the limit orders file:
-
-1. Go to the LimitOrders Directory
-
-2. Compile the file
-```
-javac *.java
-```
-
-3. Run the AlphaEngine
-```
-java AlphaEnginePublic.Java
-```

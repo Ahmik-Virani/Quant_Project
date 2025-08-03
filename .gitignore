@@ -1,4 +1,4 @@
 Data/*.csv
 log_files/*.csv
 LimitOrders/*.class
-*.DS_Store
+.DS_Store
