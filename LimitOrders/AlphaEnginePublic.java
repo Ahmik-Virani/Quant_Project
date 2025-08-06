@@ -12,16 +12,19 @@ public class AlphaEnginePublic {
         // Please download csv file from https://www.truefx.com/truefx-historical-downloads/
         // Only enter the file name not the path 
         // Please do not enter the file extension
-        new ReadData("USDTRY-2025-03", priceFeed);
+        new ReadData("USDTRY-2025-06", priceFeed);
         
         
         AlphaEngine alphaEngine = new AlphaEngine();
         for (Price price : priceFeed){
             alphaEngine.run(price);
+            System.out.println(price);
         }
 
-        System.out.println("Total good trades = " + alphaEngine.getGoodTrades());
-        System.out.println("Total bad trades = " + alphaEngine.getBadTrades());
+      //  System.out.println("Total good trades = " + alphaEngine.getGoodTrades());
+        //System.out.println("Total bad trades = " + alphaEngine.getBadTrades());
+        double TotalPnL = alphaEngine.getpnl();
+        System.out.println("Total PnL = " + TotalPnL);
     }
 
 }

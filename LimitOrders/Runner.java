@@ -184,6 +184,15 @@ public class Runner {
         return extreme;
     }
 
+    public double exitpoint(){
+        double exitvalue;
+        double OSV = getExpectedOsLevel();
+        double gamma = 0.5;
+        double modified_delta = deltaDown * gamma * (1 - OSV);
+        exitvalue = extreme * (1 - modified_delta);
+        return exitvalue;
+    }
+
 
 }
 

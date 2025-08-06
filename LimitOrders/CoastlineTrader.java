@@ -20,6 +20,7 @@ public class CoastlineTrader {
 
     private double takeProfit = 0.0;
     private double stopLoss = 0.0;
+    public int properRunnerIndex = 0;
 
     private int goodTrades = 0;
     private int badTrades = 0;
@@ -64,11 +65,16 @@ public class CoastlineTrader {
     }
 
 
+
     public void run(Price price){
         localLiquidityIndicator.computation(price);
         int[] events = new int[3];
+      //  double[] dc = new double[3];
+       // dc[0] = runners[0].getExpectedDcLevel();
         events[0] = runners[0].run(price);
+      //  dc[1] = runners[1].getExpectedDcLevel();
         events[1] = runners[1].run(price);
+      //  dc[2] = runners[2].getExpectedDcLevel();
         events[2] = runners[2].run(price);
 
         if (!initialized){
@@ -78,25 +84,24 @@ public class CoastlineTrader {
         } else {
             if (checkBuyFilled(price)){
                 makeBuyFilled(price);
-                cancelSellLimitOrder();
+                //cancelSellLimitOrder();
             } else if (checkSellFilled(price)){
                 makeSellFilled(price);
-                cancelBuyLimitOrder();
+                //cancelBuyLimitOrder();
             }
-            int properRunnerIndex = findProperRunnerIndex();
-            if (events[properRunnerIndex] != 0){ // if an event happened, but we have not a limit order at
-                // that level, than we should replace all active limit orders. I. e., should use the putOrders
-                // method. And it does not matter what kind of event just happened.
-                cancelBuyLimitOrder();
-                cancelSellLimitOrder();
-                putOrders(price);
-            } else {
-                if (positionCrossedTargetPnL(price)){
-                    closePosition(price);
+            properRunnerIndex = findProperRunnerIndex();
+
+            if (runners[properRunnerIndex].getMode() == -1) {
+                if(buyLimitOrder == null){
                     putOrders(price);
-                } else {
-                    correctOrdersLevel(runners[properRunnerIndex].getExpectedDcLevel());
                 }
+                double expectedDcLevel = runners[properRunnerIndex].getExpectedDcLevel();
+                correctBuyLimitOrder(expectedDcLevel);
+            }
+
+            if(runners[properRunnerIndex].getMode() == 1 && inventory > 0) {
+                double exitpoint = runners[properRunnerIndex].exitpoint();
+                correctSellLimitOrder(exitpoint);
             }
         }
     }
@@ -141,6 +146,7 @@ public class CoastlineTrader {
         double dStarDown = runners[properIndex].getdStarDown();
         int upperIEtype = runners[properIndex].getUpperIEtype();
         int lowerIEtype = runners[properIndex].getLowerIEtype();
+        double expectedDcLevel = runners[properIndex].getExpectedDcLevel();
         int buyDcOROS, sellDcOrOS;
         double buyDelta, sellDelta;
         if (runnerMode == -1){
@@ -156,20 +162,14 @@ public class CoastlineTrader {
         }
 
         if (longShort == 1){
-            if (disbalancedOrders.size() == 0){ // if there is no disbalanced orders then we just open a new position.
+        //    if (runnerMode ==){ // if there is no disbalanced orders then we just open a new position.
                 sellLimitOrder = null;
-                buyLimitOrder = new LimitOrder(1, price.clone(), expectedLowerIE, cascadeVol, lowerIEtype, dStarDown);
-                computeTargetRelatPnL();
-            } else {
-                buyLimitOrder = new LimitOrder(1, price.clone(), expectedLowerIE, cascadeVol, buyDcOROS, buyDelta);
-                LinkedList<LimitOrder> compensatedOrdersList = findCompensatedOrdersList(expectedUpperIE, originalDelta, -1);
-                if (compensatedOrdersList.size() != 0){
-                    sellLimitOrder = new LimitOrder(-1, price.clone(), expectedUpperIE, 0, sellDcOrOS, sellDelta); // volume is computed at the next step
-                    sellLimitOrder.setCompensatedOrders(compensatedOrdersList);
-                } else {
-                    sellLimitOrder = null;
-                }
-            }
+                double OSV = runners[properRunnerIndex].getExpectedOsLevel();
+                double gamma = 0.5;
+                double modified_delta = deltaDown * gamma * (1 - OSV);
+                double ExpectedModifiedDeltaDC = runners[properIndex].exitpoint();
+                buyLimitOrder = new LimitOrder(1, price.clone(), expectedDcLevel, cascadeVol, 1, dStarDown);
+                sellLimitOrder = new LimitOrder(-1, price.clone(), ExpectedModifiedDeltaDC, inventory, 1, modified_delta);
         }
 
         else {
@@ -282,22 +282,10 @@ public class CoastlineTrader {
 
 
     private boolean correctBuyLimitOrder(double expectedDcLevel){
-        if (buyLimitOrder.getDcORos() == 1){
-            if (longShort == 1 || disbalancedOrders.size() > 1){
-                if (expectedDcLevel > buyLimitOrder.getLevel()) {
-                    if (disbalancedOrders.size() > 1 && longShort == -1){
-                        LinkedList<LimitOrder> compensatedOrdersList = findCompensatedOrdersList(expectedDcLevel, originalDelta, 1);
-                        if (compensatedOrdersList.size() != 0){
-                            buyLimitOrder.setLevel(expectedDcLevel);
-                            buyLimitOrder.setCompensatedOrders(compensatedOrdersList);
-                        } else {
-                            buyLimitOrder = null;
-                        }
-                    } else {
-                        buyLimitOrder.setLevel(expectedDcLevel);
-                    }
-                    return true;
-                }
+        if (longShort == 1 || disbalancedOrders.size() > 1){
+            if (expectedDcLevel < buyLimitOrder.getLevel()) {
+                buyLimitOrder.setLevel(expectedDcLevel);
+                return true; 
             }
         }
         return false;
@@ -305,22 +293,10 @@ public class CoastlineTrader {
 
 
     private boolean correctSellLimitOrder(double expectedDcLevel){
-        if (sellLimitOrder.getDcORos() == 1){
-            if (longShort == -1 || disbalancedOrders.size() > 1){
-                if (expectedDcLevel < sellLimitOrder.getLevel()){
-                    if (disbalancedOrders.size() > 1 && longShort == 1){
-                        LinkedList<LimitOrder> compensatedOrdersList = findCompensatedOrdersList(expectedDcLevel, originalDelta, -1);
-                        if (compensatedOrdersList.size() != 0){
-                            sellLimitOrder.setLevel(expectedDcLevel);
-                            sellLimitOrder.setCompensatedOrders(compensatedOrdersList);
-                        } else {
-                            sellLimitOrder = null;
-                        }
-                    } else {
-                        sellLimitOrder.setLevel(expectedDcLevel);
-                    }
-                    return true;
-                }
+        if (longShort == 1 || disbalancedOrders.size() > 1){
+            if (expectedDcLevel > sellLimitOrder.getLevel()) {
+                sellLimitOrder.setLevel(expectedDcLevel);
+                return true; 
             }
         }
         return false;
@@ -392,7 +368,7 @@ public class CoastlineTrader {
      * @param price is current market price
      * @return total PnL
      */
-    private double getPositionTotalPnL(Price price){
+    public double getPositionTotalPnL(Price price){
         return getPositionProfit(price);
     }
 
@@ -482,20 +458,24 @@ public class CoastlineTrader {
 
         int properRunnerIndex = findProperRunnerIndex();
         double P_DCC = runners[properRunnerIndex].getExpectedDcLevel();
-        double delta;
+        //double delta;
 
-        if(longShort == 1){
-            delta = runners[properRunnerIndex].getDeltaUp();
-        }else{
-            delta = runners[properRunnerIndex].getDeltaDown();
-        }
-
+        double delta_down = runners[properRunnerIndex].getDeltaDown();
+        double delta_up = runners[properRunnerIndex].getDeltaUp();
         // takeProfit = P_DCC * (1 + delta / 2.0);
         // stopLoss = P_DCC * (1 - delta / 2.0);
 
         // We need percentages
-        takeProfit = delta / 2.0;
-        stopLoss = -delta / 2.0;
+        double price_bought = buyLimitOrder.getLevel();
+
+        double OSV = runners[properRunnerIndex].getExpectedOsLevel();
+        double gamma = 0.5;
+        double modified_delta = runners[properRunnerIndex].getDeltaDown() * gamma * (1 - OSV);
+
+         
+
+        takeProfit = 1000;
+        stopLoss = runners[properRunnerIndex].getExtreme() - 1 - modified_delta;
     }
 
 
