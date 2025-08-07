@@ -1,7 +1,7 @@
 public class AlphaEngine {
 
-    private int goodTrades = 0;
-    private int badTrades = 0;
+    private long goodTrades = 0;
+    private long badTrades = 0;
 
     private CoastlineTrader[] longCoastlineTraders;
     private CoastlineTrader[] shortCoastlineTraders;
@@ -38,11 +38,11 @@ public class AlphaEngine {
         shortCoastlineTraders[3] = new CoastlineTrader(0.015, -1, "../log_files/short_3.csv");
     }
 
-    public int getGoodTrades(){
+    public long getGoodTrades(){
         return goodTrades;
     }
 
-    public int getBadTrades(){
+    public long getBadTrades(){
         return badTrades;
     }
 }

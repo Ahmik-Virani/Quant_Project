@@ -21,8 +21,8 @@ public class CoastlineTrader {
     private double takeProfit = 0.0;
     private double stopLoss = 0.0;
 
-    private int goodTrades = 0;
-    private int badTrades = 0;
+    private long goodTrades = 0;
+    private long badTrades = 0;
 
     private String logFileName;    // File which stores the log for this trader
 
@@ -74,7 +74,7 @@ public class CoastlineTrader {
         if (!initialized){
             initialized = true;
             correctThresholdsAndVolumes(inventory);
-            putOrders(price);
+            // putOrders(price);
         } else {
             if (checkBuyFilled(price)){
                 makeBuyFilled(price);
@@ -95,7 +95,7 @@ public class CoastlineTrader {
             } else {
                 if (positionCrossedTargetPnL(price)){
                     closePosition(price);
-                    putOrders(price);
+                    // putOrders(price);
                 } else {
                     correctOrdersLevel(runners[properRunnerIndex].getExpectedDcLevel());
                 }
@@ -510,11 +510,11 @@ public class CoastlineTrader {
         return realizedProfit;
     }
 
-    public int getGoodTrades(){
+    public long getGoodTrades(){
         return goodTrades;
     }
 
-    public int getBadTrades(){
+    public long getBadTrades(){
         return badTrades;
     }
 
