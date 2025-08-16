@@ -24,6 +24,10 @@ public class CoastlineTrader {
     private long goodTrades = 0;
     private long badTrades = 0;
 
+    private long tickCount = 0;
+    private long cancelCount = 0;
+    private long buyLimitOrderPlacedCount = 0;
+
     private String logFileName;    // File which stores the log for this trader
 
     /**
@@ -65,6 +69,8 @@ public class CoastlineTrader {
 
 
     public void run(Price price){
+        tickCount++;
+
         localLiquidityIndicator.computation(price);
         int[] events = new int[3];
         events[0] = runners[0].run(price);
@@ -75,36 +81,75 @@ public class CoastlineTrader {
             initialized = true;
             correctThresholdsAndVolumes(inventory);
             // putOrders(price);
-        } else {
-            if (checkBuyFilled(price)){
-                makeBuyFilled(price);
-                cancelSellLimitOrder();
-            } else if (checkSellFilled(price)){
-                makeSellFilled(price);
-                cancelBuyLimitOrder();
-            }
-            int properRunnerIndex = findProperRunnerIndex();
-            if (events[properRunnerIndex] == 1 && longShort == 1){ 
-                // Open long position at DC↑(θ) confirmation
+        } 
+        // else {
+        //     if (checkBuyFilled(price)){
+        //         makeBuyFilled(price);
+        //         cancelSellLimitOrder();
+        //     } else if (checkSellFilled(price)){
+        //         makeSellFilled(price);
+        //         cancelBuyLimitOrder();
+        //     }
+        //     int properRunnerIndex = findProperRunnerIndex();
+        //     if (events[properRunnerIndex] == 1 && longShort == 1){ 
+        //         // Open long position at DC↑(θ) confirmation
                
-                cancelBuyLimitOrder();
-                cancelSellLimitOrder();
-                putOrders(price);
-            } else {
-                if (positionCrossedTargetPnL(price)){
-                    closePosition(price);
-                    // putOrders(price);
-                } else {
-                    correctOrdersLevel(runners[properRunnerIndex].getExpectedDcLevel());
-                }
-            }
+        //         cancelBuyLimitOrder();
+        //         cancelSellLimitOrder();
+        //         putOrders(price);
+        //     } else {
+        //         if (checkBuyFilled(price)) {
+        //             makeBuyFilled(price);
+        //             cancelSellLimitOrder();
+        //         }
+        //         if (positionCrossedTargetPnL(price)){
+        //             closePosition(price);
+        //             // putOrders(price);
+        //         } 
+        //         // else {
+        //         //     correctOrdersLevel(runners[properRunnerIndex].getExpectedDcLevel());
+        //         // }
+        //     }
+        // }
+
+        int properRunnerIndex = findProperRunnerIndex();
+
+        // 1. Place/cancel orders ONLY at DC↑(θ) confirmation
+        if (events[properRunnerIndex] == 1 && longShort == 1){ 
+            cancelBuyLimitOrder();
+            cancelSellLimitOrder();
+            putOrders(price);
+            return;
         }
+
+        // 2. If buy order is filled, handle it
+        if (checkBuyFilled(price)){
+            makeBuyFilled(price);
+            cancelSellLimitOrder();
+            return;
+        }
+
+        // 3. If take profit or stop loss is hit, close position
+        if (positionCrossedTargetPnL(price)){
+            closePosition(price);
+            return;
+        }
+
+        // 4. (Optional) If you want to handle sell fills for de-cascading
+        if (checkSellFilled(price)){
+            makeSellFilled(price);
+            System.out.println("Sell order filled!");
+            cancelBuyLimitOrder();
+            return;
+        }        
     }
 
 
     private boolean checkBuyFilled(Price price){
         if (buyLimitOrder != null){
-            if (price.getAsk() < buyLimitOrder.getLevel()){
+            // System.out.println("BuyLimitOrder Level: " + buyLimitOrder.getLevel() + ", Market Ask: " + price.getAsk());
+            if (price.getAsk() <= buyLimitOrder.getLevel()){
+                System.out.println("Buy order filled!");
                 return true;
             }
         }
@@ -159,9 +204,13 @@ public class CoastlineTrader {
             if (disbalancedOrders.size() == 0){ // if there is no disbalanced orders then we just open a new position.
                 sellLimitOrder = null;
                 buyLimitOrder = new LimitOrder(1, price.clone(), expectedLowerIE, cascadeVol, lowerIEtype, dStarDown);
+                buyLimitOrderPlacedCount++;
+                System.out.println("Placing buy limit order at: " + expectedLowerIE + ", current ask: " + price.getAsk());
                 computeTargetRelatPnL();
             } else {
                 buyLimitOrder = new LimitOrder(1, price.clone(), expectedLowerIE, cascadeVol, buyDcOROS, buyDelta);
+                buyLimitOrderPlacedCount++;
+                System.out.println("Placing buy limit order at: " + expectedLowerIE + ", current ask: " + price.getAsk());
                 LinkedList<LimitOrder> compensatedOrdersList = findCompensatedOrdersList(expectedUpperIE, originalDelta, -1);
                 if (compensatedOrdersList.size() != 0){
                     sellLimitOrder = new LimitOrder(-1, price.clone(), expectedUpperIE, 0, sellDcOrOS, sellDelta); // volume is computed at the next step
@@ -182,6 +231,8 @@ public class CoastlineTrader {
                 LinkedList<LimitOrder> compensatedOrdersList = findCompensatedOrdersList(expectedLowerIE, originalDelta, 1);
                 if (compensatedOrdersList.size() != 0){
                     buyLimitOrder = new LimitOrder(1, price.clone(), expectedLowerIE, 0, buyDcOROS, buyDelta); // volume is computed at the next step
+                    buyLimitOrderPlacedCount++;
+                    System.out.println("Placing buy limit order at: " + expectedLowerIE + ", current ask: " + price.getAsk());
                     buyLimitOrder.setCompensatedOrders(compensatedOrdersList);
                 } else {
                     buyLimitOrder = null;
@@ -250,7 +301,7 @@ public class CoastlineTrader {
         }
         if (disbalancedOrders.size() == 0){ // inventory can become equal to 0, so there is no
             // a position in reality. We should close in this case.
-            closePosition(price);
+            closePosition(price); 
         }
         sellLimitOrder = null;
     }
@@ -333,6 +384,7 @@ public class CoastlineTrader {
 
 
     private void cancelBuyLimitOrder(){
+        cancelCount++;
         buyLimitOrder = null;
     }
 
@@ -374,6 +426,12 @@ public class CoastlineTrader {
      */
     private boolean positionCrossedTargetPnL(Price price){
         // return (getPositionTotalPnL(price) >= targetAbsPnL);
+
+        if(disbalancedOrders.size() == 0){
+            return false; // no position to close
+        }
+
+        computeTargetRelatPnL();
 
         int properRunnerIndex = findProperRunnerIndex();
         double P_C = runners[properRunnerIndex].getCurrentPrice(price);
@@ -507,6 +565,12 @@ public class CoastlineTrader {
 
     public long getBadTrades(){
         return badTrades;
+    }
+
+    public void printTickAndCancelStats() {
+        System.out.println("Total ticks: " + tickCount);
+        System.out.println("Total buyLimitOrder cancels: " + cancelCount);
+        System.out.println("Total buyLimitOrder placed: " + buyLimitOrderPlacedCount);
     }
 
 }

@@ -11,6 +11,11 @@ public class Runner {
     private double expectedDcLevel, expectedOsLevel;
     private double currentPrice;
 
+    private double minPriceDuringUpDC; // For PDCC↑*
+    private double maxPriceInTrend;    // For PHi
+    private double minPriceInTrend;    // For PLo
+    private double overshootValue;     // For OSV
+
 
     public Runner(double deltaUp, double deltaDown, double dStarUp, double dStarDown){
         this.deltaUp = deltaUp;
@@ -26,6 +31,8 @@ public class Runner {
         if(!initialized){
             initialized = true;
             extreme = reference = price.getMid();
+            maxPriceInTrend = minPriceInTrend = extreme;
+            minPriceDuringUpDC = extreme;
             findExpectedDClevel();
             findExpectedOSlevel(price);
             return 0;
@@ -35,12 +42,16 @@ public class Runner {
             if( price.getBid() >= expectedDcLevel){
                 mode = 1;
                 extreme = reference = price.getBid();
+                maxPriceInTrend = extreme;
+                minPriceInTrend = extreme;
+                minPriceDuringUpDC = extreme;
                 findExpectedDClevel();
                 findExpectedOSlevel(price);
                 return 1;
             }
             if( price.getAsk() < extreme ){
                 extreme = price.getAsk();
+                minPriceInTrend = Math.min(minPriceInTrend, price.getAsk());
                 findExpectedDClevel();
                 if( price.getAsk() < expectedOsLevel ){
                     reference = extreme;
@@ -52,12 +63,16 @@ public class Runner {
             if( price.getAsk() <= expectedDcLevel ){
                 mode = -1;
                 extreme = reference = price.getAsk();
+                maxPriceInTrend = extreme;
+                minPriceInTrend = extreme;
+                minPriceDuringUpDC = extreme;
                 findExpectedDClevel();
                 findExpectedOSlevel(price);
                 return -1;
             }
             if( price.getBid() > extreme ){
                 extreme = price.getBid();
+                maxPriceInTrend = Math.max(maxPriceInTrend, price.getBid());
                 findExpectedDClevel();
                 if( price.getBid() > expectedOsLevel ){
                     reference = extreme;
@@ -65,10 +80,40 @@ public class Runner {
                     return 2;
                 }
             }
-            
+            // Track minimal price during upward DC
+            if (price.getAsk() < minPriceDuringUpDC) {
+                minPriceDuringUpDC = price.getAsk();
+            }
         }
+        calculateOvershootValue(price);
         return 0;
     }
+
+    private void calculateOvershootValue(Price price) {
+        // Only calculate if in upward DC
+        if (mode == 1) {
+            double Pc = price.getBid();
+            double PDCCstar = minPriceDuringUpDC * (1 + deltaUp);
+            if (PDCCstar != 0 && deltaUp != 0) {
+                overshootValue = ((Pc - PDCCstar) / PDCCstar) / deltaUp;
+            } else {
+                overshootValue = 0;
+            }
+        } else {
+            double Pc = price.getAsk();
+            double PDCCstar = maxPriceInTrend * (1 - deltaDown);
+            if (PDCCstar != 0 && deltaDown != 0) {
+                overshootValue = ((Pc - PDCCstar) / PDCCstar) / deltaDown;
+            } else {
+                overshootValue = 0;
+            }
+        }
+    }
+
+    public double getMinPriceDuringUpDC() { return minPriceDuringUpDC; }
+    public double getMaxPriceInTrend() { return maxPriceInTrend; }
+    public double getMinPriceInTrend() { return minPriceInTrend; }
+    public double getOvershootValue() { return overshootValue; }
 
 
     private void findExpectedDClevel(){
@@ -91,12 +136,16 @@ public class Runner {
         if (mode == -1){
             // expectedOsLevel = Math.exp(Math.log(reference) - dStarDown);
 
-            expectedOsLevel = commonPart / deltaDown;
+            // expectedOsLevel = commonPart / deltaDown;
+
+            expectedOsLevel = reference * (1 - dStarDown);
 
         } else {
             // expectedOsLevel = Math.exp(Math.log(reference) + dStarUp);
 
-            expectedOsLevel = commonPart / deltaUp;
+            // expectedOsLevel = commonPart / deltaUp;
+
+            expectedOsLevel = reference * (1 + dStarUp);
         }
 
 

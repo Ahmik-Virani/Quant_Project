@@ -70,4 +70,13 @@ public class AlphaEngine {
 
         return realizedProfit;
     }
+
+    public void printTickAndCancelStats() {
+        for (CoastlineTrader coastlineTrader : longCoastlineTraders) {
+            coastlineTrader.printTickAndCancelStats();
+        }
+        // for (CoastlineTrader coastlineTrader : shortCoastlineTraders) {
+        //     coastlineTrader.printTickAndCancelStats();
+        // }
+    }
 }

@@ -23,6 +23,8 @@ public class AlphaEnginePublic {
         System.out.println("Total good trades = " + alphaEngine.getGoodTrades());
         System.out.println("Total bad trades = " + alphaEngine.getBadTrades());
         System.out.println("Overall = " + alphaEngine.getRealizedProfit());
+
+        alphaEngine.printTickAndCancelStats();
     }
 
 }
