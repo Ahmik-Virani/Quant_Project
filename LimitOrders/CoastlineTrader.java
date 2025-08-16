@@ -84,11 +84,9 @@ public class CoastlineTrader {
                 cancelBuyLimitOrder();
             }
             int properRunnerIndex = findProperRunnerIndex();
-            // if (events[properRunnerIndex] != 0){ 
             if (events[properRunnerIndex] == 1 && longShort == 1){ 
-                // if an event happened, but we have not a limit order at
-                // that level, than we should replace all active limit orders. I. e., should use the putOrders
-                // method. And it does not matter what kind of event just happened.
+                // Open long position at DC↑(θ) confirmation
+               
                 cancelBuyLimitOrder();
                 cancelSellLimitOrder();
                 putOrders(price);
@@ -380,12 +378,10 @@ public class CoastlineTrader {
         int properRunnerIndex = findProperRunnerIndex();
         double P_C = runners[properRunnerIndex].getCurrentPrice(price);
 
-        // if(getPositionTotalPnL(price) >= takeProfit){
         if(P_C >= takeProfit){
             goodTrades++;
             return true;
         }
-        // if(getPositionTotalPnL(price) <= stopLoss){
         if(P_C <= stopLoss){
             badTrades++;
             return true;
@@ -484,8 +480,6 @@ public class CoastlineTrader {
 
     // Strategy A
     private void computeTargetRelatPnL(){
-        // takeProfit = extreme * (1 + originalDelta) * (1 + originalDelta/2);
-        // stopLoss = extreme * (1 + originalDelta) * (1 - originalDelta/2);
 
         int properRunnerIndex = findProperRunnerIndex();
         double P_DCC = runners[properRunnerIndex].getExpectedDcLevel();
@@ -500,9 +494,6 @@ public class CoastlineTrader {
         takeProfit = P_DCC * (1 + delta / 2.0);
         stopLoss = P_DCC * (1 - delta / 2.0);
 
-        // We need percentages
-        // takeProfit = delta / 2.0;
-        // stopLoss = -delta / 2.0;
     }
 
 

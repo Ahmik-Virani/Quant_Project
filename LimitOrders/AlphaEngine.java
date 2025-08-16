@@ -2,6 +2,7 @@ public class AlphaEngine {
 
     private long goodTrades = 0;
     private long badTrades = 0;
+    private double realizedProfit = 0;
 
     private CoastlineTrader[] longCoastlineTraders;
     private CoastlineTrader[] shortCoastlineTraders;
@@ -14,13 +15,9 @@ public class AlphaEngine {
     public void run(Price price){
         for (CoastlineTrader coastlineTrader : longCoastlineTraders){
             coastlineTrader.run(price);
-            goodTrades += coastlineTrader.getGoodTrades();
-            badTrades += coastlineTrader.getBadTrades();
         }
         for (CoastlineTrader coastlineTrader: shortCoastlineTraders){
             coastlineTrader.run(price);
-            goodTrades += coastlineTrader.getGoodTrades();
-            badTrades += coastlineTrader.getBadTrades();
         }
     }
 
@@ -39,10 +36,38 @@ public class AlphaEngine {
     }
 
     public long getGoodTrades(){
+
+        for (CoastlineTrader coastlineTrader : longCoastlineTraders){
+            goodTrades += coastlineTrader.getGoodTrades();
+        }
+        for (CoastlineTrader coastlineTrader: shortCoastlineTraders){
+            goodTrades += coastlineTrader.getGoodTrades();
+        }
+
         return goodTrades;
     }
 
     public long getBadTrades(){
+
+        for (CoastlineTrader coastlineTrader : longCoastlineTraders){
+            badTrades += coastlineTrader.getBadTrades();
+        }
+        for (CoastlineTrader coastlineTrader: shortCoastlineTraders){
+            badTrades += coastlineTrader.getBadTrades();
+        }
+
         return badTrades;
+    }
+
+    public double getRealizedProfit(){
+
+        for (CoastlineTrader coastlineTrader : longCoastlineTraders){
+            realizedProfit += coastlineTrader.getRealizedProfit();
+        }
+        for (CoastlineTrader coastlineTrader: shortCoastlineTraders){
+            realizedProfit += coastlineTrader.getRealizedProfit();
+        }
+
+        return realizedProfit;
     }
 }
